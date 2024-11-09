@@ -1,16 +1,16 @@
 // set pin numbers for switch, joystick axes, and LED:
-#define hallXPIN A0
-#define hallYPIN A1
+#define hallXPIN A4
+#define hallYPIN A5
 #define buttonPIN 2
 
-#define enableAPIN 11
-#define in1PIN 10
-#define in2PIN 9
-#define in3PIN 8
-#define in4PIN 7
-#define enableBPIN 6
+#define posXOutPIN 5
+#define negXOutPIN 6
+#define posYOutPIN 9
+#define negYOutPIN 10
 
-const int refreshTime = 50; // [ms]
+
+
+const int refreshTime = 1000; // [ms]
 const int range = 512;
 
 int valX = 0;
@@ -22,49 +22,55 @@ bool button = false;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(enableAPIN,OUTPUT);
-  pinMode(in1PIN,OUTPUT);
-  pinMode(in2PIN,OUTPUT);
-  pinMode(in3PIN,OUTPUT);
-  pinMode(in4PIN,OUTPUT);
-  pinMode(enableBPIN,OUTPUT);
+  pinMode(posXOutPIN, OUTPUT);
+  pinMode(negXOutPIN, OUTPUT);
+  pinMode(posYOutPIN, OUTPUT);
+  pinMode(negYOutPIN, OUTPUT);
 
-  // Initial direction magnets
-  digitalWrite(in1PIN, LOW);
-  digitalWrite(in2PIN, HIGH);
-
-  digitalWrite(in3PIN, LOW);
-  digitalWrite(in4PIN, HIGH);
-  
+  TCCR0B = TCCR0B & B11111000 | B00000001; // set timer 0 divisor to 1 for PWM frequency of 62500.00 Hz
 }
 
-//Measure RPM
 void loop() {
   valX = analogRead(hallXPIN);
   valY = analogRead(hallYPIN);
 
   // map the reading from the analog input range to the output range:
-  mappedX = map(valX, 0, 1023, -range, range);
+  mappedX = map(valX, 0, 1023, -255, 255);
   // map the reading from the analog input range to the output range:
-  mappedY = map(valY, 0, 1023, -range, range);
+  mappedY = map(valY, 0, 1023, -255, 255);
 
-  button = digitalRead(buttonPIN);
+  //  button = digitalRead(buttonPIN);
 
-  Serial.print(button);
+  //  Serial.print(button);
 
-  Serial.print("Hall sensor Data,\tX: ");
+  Serial.print("\nHall sensor Data,\tX: ");
+  Serial.print(valX);
+
+  Serial.print("\tY: ");
+  Serial.print(valY);
+  
+  Serial.print("\tMapped value: ");
   Serial.print(mappedX);
   Serial.print("\tY: ");
-  Serial.println(mappedY);
+  Serial.print(mappedY);
 
-  if (button) {
-    analogWrite(enableAPIN, 255);
-    analogWrite(enableBPIN, 255);
-  } else {
-    analogWrite(enableAPIN, 0);
-    analogWrite(enableBPIN, 0);
+  if (mappedX > 0) {
+    analogWrite(posXOutPIN, mappedX);
+    analogWrite(negXOutPIN, 0);
+    }
+  else if (mappedX < 0) {
+    analogWrite(posXOutPIN, 0);
+    analogWrite(negXOutPIN, -mappedX);
   }
 
+  if (mappedY > 0) {
+    analogWrite(posYOutPIN, mappedY);
+    analogWrite(negYOutPIN, 0);
+    }
+  else if (mappedY < 0) {
+    analogWrite(posYOutPIN, 0);
+    analogWrite(negYOutPIN, -mappedY);
+  }
 
 
   delay(refreshTime);
